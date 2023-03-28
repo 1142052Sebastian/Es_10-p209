@@ -1,0 +1,73 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+
+public class GasReader {
+
+    private static final String API_URL = "http://api.meter.gas/";
+    private static final String ALL_METERS_PATH = "ALL";
+    private static final String CONTENT_TYPE = "application/json";
+
+    public static void main(String[] args) throws Exception {
+        List<String> meterIds = getMeterIds();
+        for (String meterId : meterIds) {
+            double reading = getReading(meterId);
+            System.out.println("Meter ID: " + meterId + " Reading: " + reading);
+        }
+    }
+
+    private static List<String> getMeterIds() throws Exception {
+        URL url = new URL(API_URL + ALL_METERS_PATH);
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestMethod("GET");
+        con.setRequestProperty("Content-Type", CONTENT_TYPE);
+
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(con.getInputStream()));
+        String inputLine;
+        StringBuilder content = new StringBuilder();
+        while ((inputLine = in.readLine()) != null) {
+            content.append(inputLine);
+        }
+        in.close();
+        con.disconnect();
+
+        String jsonString = content.toString();
+        JSONObject json = new JSONObject(jsonString);
+        JSONArray meterIdsJson = json.getJSONArray("matricole");
+
+        List<String> meterIds = new ArrayList<>();
+        for (int i = 0; i < meterIdsJson.length(); i++) {
+            String meterId = meterIdsJson.getString(i);
+            meterIds.add(meterId);
+        }
+
+        return meterIds;
+    }
+
+    private static double getReading(String meterId) throws Exception {
+        URL url = new URL(API_URL + meterId);
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestMethod("GET");
+        con.setRequestProperty("Content-Type", CONTENT_TYPE);
+
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(con.getInputStream()));
+        String inputLine;
+        StringBuilder content = new StringBuilder();
+        while ((inputLine = in.readLine()) != null) {
+            content.append(inputLine);
+        }
+        in.close();
+        con.disconnect();
+
+        String jsonString = content.toString();
+        JSONObject json = new JSONObject(jsonString);
+        double reading = json.getDouble("lettura");
+
+        return reading;
+    }
+}
